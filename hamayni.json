@@ -1,0 +1,200 @@
+{
+  "contract_version": "1.1.0",
+  "template_id": "supabase-selfhosted-v2",
+  "template_version": "1.0.0",
+  "name": "Supabase Self-Hosted V2",
+  "description": "Full Supabase stack",
+  "artifact_type": "docker_stack",
+  "source_ref": {
+    "type": "branch",
+    "value": "main"
+  },
+  "prerequisites": [
+    "docker",
+    "docker-compose"
+  ],
+  "runtime": {
+    "kind": "docker-compose",
+    "compose_file": "docker-compose.yml",
+    "profiles_supported": true,
+    "services": [
+      "db",
+      "kong",
+      "auth",
+      "rest",
+      "storage",
+      "realtime",
+      "meta",
+      "studio"
+    ],
+    "ports": {
+      "http": 8000,
+      "studio": 3000
+    }
+  },
+  "wizard_options": [
+    {
+      "key": "ENABLE_STUDIO",
+      "label": "Supabase Studio",
+      "description": "Dashboard web",
+      "type": "boolean",
+      "default": true,
+      "ram_estimate_mb": 350,
+      "affects": {
+        "profiles": [
+          "studio"
+        ]
+      }
+    },
+    {
+      "key": "ENABLE_ANALYTICS",
+      "label": "Analytics",
+      "description": "Logflare",
+      "type": "boolean",
+      "default": false,
+      "ram_estimate_mb": 300,
+      "affects": {
+        "profiles": [
+          "analytics"
+        ]
+      }
+    },
+    {
+      "key": "ENABLE_VECTOR",
+      "label": "Vector",
+      "description": "Observabilité",
+      "type": "boolean",
+      "default": false,
+      "ram_estimate_mb": 200,
+      "affects": {
+        "profiles": [
+          "vector"
+        ]
+      }
+    },
+    {
+      "key": "ENABLE_IMGPROXY",
+      "label": "Imgproxy",
+      "description": "Image resize",
+      "type": "boolean",
+      "default": false,
+      "ram_estimate_mb": 150,
+      "affects": {
+        "profiles": [
+          "imgproxy"
+        ]
+      }
+    }
+  ],
+  "env": [
+    {
+      "name": "DB_PASSWORD",
+      "required": true,
+      "description": "Mot de passe PostgreSQL"
+    },
+    {
+      "name": "JWT_SECRET",
+      "required": true,
+      "description": "Secret JWT"
+    },
+    {
+      "name": "ANON_KEY",
+      "required": true,
+      "description": "Clé anonyme"
+    },
+    {
+      "name": "SERVICE_ROLE_KEY",
+      "required": true,
+      "description": "Clé service_role"
+    },
+    {
+      "name": "API_EXTERNAL_URL",
+      "required": true,
+      "description": "URL externe API"
+    },
+    {
+      "name": "SITE_URL",
+      "required": true,
+      "description": "URL frontend"
+    }
+  ],
+  "health": {
+    "checks": [
+      {
+        "path": "http://localhost:8000/",
+        "expected_status": 200,
+        "timeout_s": 90
+      },
+      {
+        "path": "http://localhost:8000/auth/v1/health",
+        "expected_status": 200,
+        "timeout_s": 60
+      },
+      {
+        "path": "http://localhost:3000/",
+        "expected_status": 200,
+        "timeout_s": 30,
+        "requires_option": "ENABLE_STUDIO"
+      }
+    ],
+    "success_policy": "all"
+  },
+  "nginx": {
+    "upstreams": [
+      {
+        "path": "/supabase/",
+        "target": "http://127.0.0.1:8000/",
+        "description": "Kong"
+      },
+      {
+        "path": "/studio/",
+        "target": "http://127.0.0.1:3000/",
+        "description": "Studio",
+        "requires_option": "ENABLE_STUDIO"
+      }
+    ]
+  },
+  "policies": {
+    "strict_mode": true,
+    "ban_latest": true,
+    "infra_requires_tag_or_commit": true
+  },
+  "credentials_spec": [
+    {
+      "key": "STUDIO_URL",
+      "label": "Studio URL",
+      "computed": "https://${DOMAIN}/studio/"
+    },
+    {
+      "key": "API_URL",
+      "label": "API URL",
+      "computed": "https://${DOMAIN}/supabase/"
+    },
+    {
+      "key": "ANON_KEY",
+      "label": "Anon Key",
+      "from_env": "ANON_KEY",
+      "hidden": true
+    },
+    {
+      "key": "SERVICE_ROLE_KEY",
+      "label": "Service Role Key",
+      "from_env": "SERVICE_ROLE_KEY",
+      "hidden": true
+    },
+    {
+      "key": "DB_PASSWORD",
+      "label": "DB Password",
+      "from_env": "DB_PASSWORD",
+      "hidden": true
+    },
+    {
+      "key": "JWT_SECRET",
+      "label": "JWT Secret",
+      "from_env": "JWT_SECRET",
+      "hidden": true
+    }
+  ],
+  "minAgentVersion": "2.10.0",
+  "tested": true
+}
